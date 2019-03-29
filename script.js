@@ -1,9 +1,17 @@
 var CANVAS_SIZE = 800;
 $(document).ready(function() {
+    var downloadLink = document.createElement('a');
+    downloadLink.href = "#";
+    document.getElementsByTagName('body')[0].appendChild(downloadLink);
+    $("a").on("click", function() {
+        this.href = canvas.toDataURL('image/png')
+          .replace(/^data:image\/[^;]*/, 'data:application/octet-stream');
+    });
+
     var canvas = document.createElement('canvas');
     canvas.width  = CANVAS_SIZE;
     canvas.height = CANVAS_SIZE;
-    document.getElementsByTagName('body')[0].appendChild(canvas);
+    downloadLink.appendChild(canvas);
     var context = canvas.getContext('2d');
 
     var promises = [];
