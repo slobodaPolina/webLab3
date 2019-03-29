@@ -14,43 +14,27 @@ $(document).ready(function() {
     downloadLink.appendChild(canvas);
     var context = canvas.getContext('2d');
 
-    var promises = [];
-    for(var i = 0; i < 2; i++) {
-      for(var j = 0; j < 2; j++) {
-        promises.push(
-          drawImage('test.jpg', CANVAS_SIZE * i / 2, CANVAS_SIZE * j / 2)
-        );
-        /*
-        $.ajax({
-          url: "https://api.unsplash.com/photos/random?client_id=" + my_access_key,
-          success: function(data) {
-            console.log("SUCCESS!");
-            drawImage(data.urls.full, CANVAS_SIZE * i / 2, CANVAS_SIZE * j / 2);
-          },
-          error: function(data) {
-            console.log("ERROR!");
-            console.log(data.statusText);
-          }
-        });
-        */
-      }
-    }
-    Promise.all(promises).then(function() {
+    drawRandomPhotos().then(function() {
         $.ajax({
           url: "https://quotes.rest/qod",
           Accept: "application/json",
           success: function(data) {
             console.log("SUCCESS!");
-            console.log(data.contents.quotes[0].quote);
 
-            context.font = "40px Georgia";
+            context.font = "40px Georgia bold";
             context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillText(
-              data.contents.quotes[0].quote,
-              CANVAS_SIZE / 2,
-              CANVAS_SIZE / 2
+            var lines = getLines(
+              data.contents.quotes[0].quote
+              //"Требуется генерировать коллажи изображений с цитатами с помощью элемента canvas с возможностью сохранения контента на чистом javascript (без html и css)"
             );
+            var start_line = (CANVAS_SIZE / 2) - (lines.length * 40);
+            for(var k = 0; k < lines.length; k++) {
+              context.fillText(
+                lines[k],
+                CANVAS_SIZE / 2,
+                start_line + 80 * k
+              );
+            }
           },
           error: function(data) {
             console.log("ERROR!");
@@ -59,23 +43,69 @@ $(document).ready(function() {
         });
     });
 
-    //src of image, x and y position in the canvas
-    function drawImage(src, x, y) {
-      return new Promise(function (resolve) {
-        var image = new Image();
-        image.src = src;
-        image.onload = function() {
-          context.drawImage(
-            image,
-            0, 0, image.width, image.height,
-            x, y, 400, 400
-          );
-          resolve();
+  function getLines(text) {
+    var words = text.split(" ");
+    var lines = [];
+    var currentLine = words[0];
+
+    for (var i = 1; i < words.length; i++) {
+        var word = words[i];
+        var width = context.measureText(currentLine + " " + word).width;
+        if (width < CANVAS_SIZE * 0.9) {
+            currentLine += " " + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
         }
-        image.onerror = function(error) {
-          console.error(error);
+    }
+    lines.push(currentLine);
+    return lines;
+  }
+
+  function drawRandomPhotos() {
+    return new Promise(function(resolveMain) {
+      var promises = [];
+      $.ajax({
+        url: "https://api.unsplash.com/photos/random?client_id=" + my_access_key + "&count=4",
+        success: function(data) {
+          var counter = 0;
+          var positions = [];
+          for (i = 0; i < 4; i ++) {
+            positions[i] = {
+              x : (CANVAS_SIZE / 2) * (i % 2),
+              y : (CANVAS_SIZE / 2) * (i > 1)
+            };
+            promises.push(
+              new Promise(function(resolve, reject) {
+                var image = new Image();
+                var localCounter = counter++;
+                image.src = data[localCounter].urls.full;
+                image.onload = function() {
+                  context.drawImage(
+                      image,
+                      0, 0, image.width, image.height,
+                      positions[localCounter].x,
+                      positions[localCounter].y,
+                      CANVAS_SIZE / 2,
+                      CANVAS_SIZE / 2
+                  );
+                  resolve();
+                }
+                image.onerror = function(error) {
+                  console.error(error);
+                  reject();
+                }
+              })
+            );
+          }
+          Promise.all(promises).then(resolveMain);
+        },
+        error: function(data) {
+          console.log("ERROR!");
+          console.log(data.statusText);
         }
       });
+    });
   }
 
 });
