@@ -23,6 +23,7 @@ $(document).ready(function() {
 
             context.font = "40px Georgia bold";
             context.textAlign = "center";
+            canvas.shadowColor = "rgba(1, 1, 1, 1)";
             var lines = getLines(
               data.contents.quotes[0].quote
               //"Требуется генерировать коллажи изображений с цитатами с помощью элемента canvas с возможностью сохранения контента на чистом javascript (без html и css)"
@@ -66,7 +67,7 @@ $(document).ready(function() {
     return new Promise(function(resolveMain) {
       var promises = [];
       $.ajax({
-        url: "https://api.unsplash.com/photos/random?client_id=" + my_access_key + "&count=4",
+        url: "https://api.unsplash.com/photos/random?client_id=" + my_access_key + "&count=4&query='white background'",
         success: function(data) {
           var counter = 0;
           var positions = [];
@@ -80,6 +81,7 @@ $(document).ready(function() {
                 var image = new Image();
                 var localCounter = counter++;
                 image.src = data[localCounter].urls.full;
+                image.crossOrigin = '';
                 image.onload = function() {
                   context.drawImage(
                       image,
